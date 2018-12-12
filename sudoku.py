@@ -44,6 +44,7 @@ class Sudoku():
                 self.possibles[r].append(this_box)
 
     def print_possibles(self):
+        """Debugger - pretty-print self.possibles"""
         print("\n")
         for line in self.possibles:
             out = ""
@@ -104,9 +105,6 @@ class Sudoku():
                         or not num in checkcol
                         or not num in checksqr):
                         self.print_possibles()
-                        print(checkrow,
-                              checkcol,
-                              checksqr)
                         print("row = " + str(r))
                         print("col = " + str(c))
                         print("Pos = " + str(pos))
@@ -116,6 +114,14 @@ class Sudoku():
         self.update()
         print("Ending second pass")
         return initial == str(self.raw)
+
+    def last_pass(self):
+        lp_outs = []
+        for r in range(9):
+            for c in range(9):
+                if self.possibles[r][c]:
+                    pass
+
 
     def solve(self):
         while True:
@@ -127,7 +133,90 @@ class Sudoku():
                 for line in self.possibles:
                     print(line)
                 print(self)
-                return
+                done = True
+                for row in self.raw:
+                    if 0 in row:
+                        done = False
+                return done
+
+    def validate(self):
+        valid = True
+        for i in range(9):
+            r = [str(v) for v in self.__dict__["row" + str(i)] if v != 0]
+            if len(set(r)) != len("".join(r)):
+                valid = False
+            c = [str(v) for v in self.__dict__["col" + str(i)] if v != 0]
+            if len(set(c)) != len("".join(c)):
+                valid = False
+        for x in range(3):
+            for y in range(3):
+                s = [str(v) for v in self.__dict__[f"sqr{x}{y}"] if v != 0]
+                if len(set(s)) != len("".join(s)):
+                    valid = False
+        return valid
+
+    def full(self):
+        _full = True
+        for row in self.raw:
+            if 0 in row:
+                _full = False
+        return _full
+    
+    def solveable(self):
+        _solveable = True
+        for r in range(9):
+            for c in range(9):
+                if self.raw[r][c] == 0 and len(self.possibles[r][c]) == 0:
+                    _solveable = False
+        return _solveable
+
+    def guess(self):
+        self.temp = Sudoku(self.raw)
+        self.temp.update()
+        blah = tuple(self.temp.possibles)
+        for r in range(9):
+            for c in range(9):
+                if self.temp.possibles[r][c]:
+                    for poss in blah[r][c]:
+                        self.temp.raw[r][c] = poss
+                        self.temp.possibles[r][c].remove(poss)
+                        self.temp.update()
+                        if not self.temp.validate():
+                            print("not temp.validate()")
+                            continue
+                        if self.temp.solveable() and not self.temp.full():
+                            print("not temp.full and self.solveable()")
+                            print(f"({r+1}, {c+1}) -> {poss}")
+                            print(self.temp, "\n")
+                            self.temp.print_possibles()
+                            print()
+                            self.temp.guess()
+                        if self.temp.validate() and self.temp.full():
+                            print("temp.validate() and temp.full()!")
+                            print(self.temp.full())
+                            self.raw = self.temp.raw
+                            self.update()
+                            return
+                        else:
+                            print("else")
+                            return
+
+    def guess2(self):
+        self.update()
+        opt_list = []
+        for r in range(9):
+            for c in range(9):
+                if self.possibles[r][c]:
+                    opt_list.append((r, c, self.possibles[r][c]))
+
+        poss_list = []
+        for cell in opt_list:
+            if not poss_list:
+                poss_list.extend(cell)
+            else:
+                t = []
+                for poss in poss_list:
+                    
 
     def row(self, *args):
         return self.__dict__["row" + str(args[0])]
@@ -183,9 +272,7 @@ class Sudoku():
         return cls(out)
 
 
-to_do = Sudoku.process_txt("new_extreme")
-to_do.update()
-to_do.solve()
-# while not (to_do.first_pass()):
-#     print(to_do, "\n")
+to_do = Sudoku.process_txt("easy")
+to_do.guess()
+# to_do.solve()
 
