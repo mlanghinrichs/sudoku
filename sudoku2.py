@@ -48,6 +48,9 @@ class Sudoku():
     def percent_done(self):
         """Return % completion rounded to 2 decimal points."""
         return round((100*len(self)) / 81, 2)
+        
+    def full(self):
+        return len(self) == 81
 
     def column(self, col_):
         """Iterate over col_'s contents."""
@@ -98,29 +101,80 @@ class Sudoku():
             for val in self.others_in_square(row_, col_):
                 poss.discard(val)
             return poss
+    
+    def other_row_possibles(self, row_, col_):
+        orp = set()
+        for c in range(9):
+            if c != col_:
+                orp = orp | self.possibles(row_, c)
+        return orp
+        
+    def other_column_possibles(self, row_, col_):
+        ocp = set()
+        for r in range(9):
+            if r != row_:
+                ocp = ocp | self.possibles(r, col_)
+        return ocp
+    
+    def other_square_possibles(self, row_, col_):
+        osp = set()
+        for r in range(9):
+            for c in range(9):
+                if row_//3 == r//3 and col_//3 == c//3 and (r, c) != (row_, col_):
+                    osp = osp | self.possibles(r, c)
+        return osp
 
     def fill_possibles(self):
         """Fill cells if they have only one possible value."""
+        print("db - running fill_possibles()")
         for cell in self:
             r = cell["r"]
             c = cell["c"]
             poss = self.possibles(r, c)
             if len(poss) == 1:
-                self[r, c] = poss.pop()
+                val = poss.pop()
+                self[r, c] = val
+                print(f"({r}, {c}) -> {val}")
+                
+        return self.full()
 
-    def fill_possibles_loop(self):
-        """fill_possibles() until it doesn't alter the puzzle state further."""
+    def loop_function(self, func):
         while True:
             current = len(self)
-            self.fill_possibles()
-            # If nothing has been added by fill_possibles(), break
+            func()
             if current == len(self):
-                break
+                return self.full()
 
-    def only_possible(self):
+    def only_possibles(self):
         """Fill cell if it holds the only # possibility in its row/col/sqr."""
-        pass
-        # TODO finish me
+        print("db - running only_possibles()")
+        for cell in self:
+            r, c = cell["r"], cell["c"]
+            check = self.possibles(r, c)
+            if not check:
+                break
+            for val in range(9):
+                if (val in check and
+                    (not val in self.other_row_possibles(r, c)
+                    or not val in self.other_column_possibles(r, c)
+                    or not val in self.other_square_possibles(r, c))):
+                        print(f"({r}, {c}) -> {val}")
+                        self[r, c] = val
+                        return self.full()
+            return self.full()
+    
+    def solve_funcs(self, *args):
+        current = len(self)
+        while not args[0]():
+            if current == len(self) and len(args) > 1:
+                self.solve_funcs(*args[1:])
+            if current == len(self):
+                return self.full()
+            current = len(self)
+        return self.full()
+    
+    def solve(self):
+        return self.solve_funcs(self.fill_possibles, self.only_possibles)
 
     @classmethod
     def process_str(cls, name):
@@ -133,8 +187,8 @@ class Sudoku():
         return cls(source)
 
 
-to_do = Sudoku.process_str("medium")
+to_do = Sudoku.process_str("new_medium")
 print(to_do.percent_done())
-to_do.fill_possibles_loop()
+to_do.solve()
 print(to_do.percent_done())
 print(to_do)
