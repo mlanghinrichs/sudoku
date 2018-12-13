@@ -199,6 +199,7 @@ class Sudoku():
         return self.full()
 
     def guess_dicts(self):
+        """Return list of dicts containing empty cells and their possibilities."""
         out = []
         for cell in self:
             r, c = cell["r"], cell["c"]
@@ -211,7 +212,8 @@ class Sudoku():
         return out
 
     def guess(self, verbose=False, *dicts):
-        # given {val, r, c, poss} and a self.validate() function
+        """Recursively guess and validate options from a set of cell dicts."""
+        # given {val, r, c, poss}
         if not dicts:
             return True
         for cell in dicts:
