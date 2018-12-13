@@ -37,12 +37,19 @@ class Sudoku():
         string = ""
         i = 0
         for cell in self:
-            string += str(cell['val'])
+            if cell["val"] != 0:
+                string += str(cell['val'])
+            else:
+                string += "-"
             i += 1
-            if i % 9:
+            if i%9 == 3 or i%9 == 6:
+                string += "|"
+            elif i % 9:
                 string += " "
             elif i % 81 and not i % 9:
                 string += "\n"
+            if i == 27 or i == 54:
+                string += "-----------------\n"
         return string
 
     def percent_done(self):
@@ -135,8 +142,10 @@ class Sudoku():
                 val = poss.pop()
                 self[r, c] = val
                 print(f"({r}, {c}) -> {val}")
-                
         return self.full()
+    
+    def fill_possibles_loop(self):
+        return self.loop_function(self.fill_possibles)
 
     def loop_function(self, func):
         while True:
@@ -152,16 +161,18 @@ class Sudoku():
             r, c = cell["r"], cell["c"]
             check = self.possibles(r, c)
             if not check:
-                break
-            for val in range(9):
+                continue
+            for val in range(1, 10):
                 if (val in check and
                     (not val in self.other_row_possibles(r, c)
                     or not val in self.other_column_possibles(r, c)
                     or not val in self.other_square_possibles(r, c))):
-                        print(f"({r}, {c}) -> {val}")
-                        self[r, c] = val
-                        return self.full()
-            return self.full()
+                    print(f"({r}, {c}) -> {val}")
+                    self[r, c] = val
+        return self.full()
+     
+    def only_possibles_loop(self):
+        return self.loop_function(self.only_possibles)
     
     def solve_funcs(self, *args):
         current = len(self)
@@ -174,7 +185,11 @@ class Sudoku():
         return self.full()
     
     def solve(self):
-        return self.solve_funcs(self.fill_possibles, self.only_possibles)
+        if self.solve_funcs(self.fill_possibles_loop, self.only_possibles_loop):
+            print("Puzzle complete!")
+        else:
+            print("Incomplete.")
+        print(self)
 
     @classmethod
     def process_str(cls, name):
@@ -187,8 +202,6 @@ class Sudoku():
         return cls(source)
 
 
-to_do = Sudoku.process_str("new_medium")
-print(to_do.percent_done())
-to_do.solve()
-print(to_do.percent_done())
+to_do = Sudoku.process_str("extreme1")
 print(to_do)
+to_do.solve()
