@@ -1,0 +1,15 @@
+Sudoku.py is a combined algorithmic and recursive-guessing sudoku solver which
+utilizes Sudoku objects. A Sudoku object's initialization takes a 9x9 list of
+lists and saves that to its raw attribute, or processes a space-and-newline
+separated text file into a list of lists via the class method process_txt().
+
+The solve() method first runs through the fill_possibles() and only_possibles
+methods until they cannot change the puzzle any further. If the puzzle is
+solved, it prints a success message and prints the solved puzzle. If the puzzle
+is still incomplete and the guess_last flag is set to true (which it is by
+default), it then drops into the guess() method to finish out the puzzle.
+Finally, it returns itself (the solved Sudoku object).
+
+The solve_by_guessing() method does not use algorithmic solving first, but
+simply guesses possible values and checks if they produce a valid Sudoku until
+the puzzle is full. It also returns the solved object.

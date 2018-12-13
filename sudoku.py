@@ -1,278 +1,276 @@
-"""Interpret and solve a sudoku number puzzle."""
-import random
-
 class Sudoku():
-    """A sudoku puzzle object."""
 
     def __init__(self, puzzle):
+        # Takes a list of row-lists containing 9 ints from 1-9,
+        # or 0 for empty cells
         self.raw = puzzle
-        self.possibles = [[], [], [], [], [], [], [], [], []]
-        self.update()
-
-    def update_dict(self, raw_or_poss="raw"):
-        if raw_or_poss == "raw":
-            pre = ""
-            pull_from = self.raw
-        elif raw_or_poss == "poss":
-            pre = "poss"
-            pull_from = self.possibles
-
-        for i in range(9):
-            self.__dict__[pre + "row" + str(i)] = pull_from[i]
-            self.__dict__[pre + "col" + str(i)] = [row[i] for row in pull_from]
-        for a in range(3):
-            for b in range(3):
-                self.__dict__[pre + f"sqr{a}{b}"] = []
-        for i in range(9):
-            for j in range(9):
-                rbox, cbox = str(i//3), str(j//3)
-                self.__dict__[pre + f"sqr{rbox}{cbox}"].append(pull_from[i][j])
-
-    def build_possibles(self):
-        self.possibles = [[], [], [], [], [], [], [], [], []]
-        for r in range(9):
-            for c in range(9):
-                if self.raw[r][c] != 0:
-                    self.possibles[r].append([])
-                    continue
-                this_box = []
-                for num in range(9):
-                    if not (num+1 in self.__dict__["row" + str(r)]
-                            or num+1 in self.__dict__["col" + str(c)]
-                            or num+1 in self.__dict__[f"sqr{r//3}{c//3}"]):
-                        this_box.append(num+1)
-                self.possibles[r].append(this_box)
-
-    def print_possibles(self):
-        """Debugger - pretty-print self.possibles"""
-        print("\n")
-        for line in self.possibles:
-            out = ""
-            for item in line:
-                out += str(item).ljust(16, " ")
-            print(out)
-
-    def update(self):
-        self.update_dict("raw")
-        self.build_possibles()
-        self.update_dict("poss")
-
-    def first_pass(self):
-        print("Starting first pass")
-        initial = str(self.raw)
-        for r in range(9):
-            for c in range(9):
-                if len(self.possibles[r][c]) == 1:
-                    print((r+1, c+1), " -> ", self.possibles[r][c][0])
-                    self.raw[r][c] = self.possibles[r][c][0]
-        self.update()
-        print("Ending first pass")
-        return initial == str(self.raw)
-
-    def second_pass(self):
-        print("Starting second pass")
-        initial = str(self.raw)
-        for r in range(9):
-            for c in range(9):
-                if self.raw[r][c] != 0:
-                    continue
-                self.update()
-                rowmates = self.__dict__["possrow" + str(r)][:c] + self.__dict__["possrow" + str(r)][c+1:] 
-                checkrow = []
-                for fellow in rowmates:
-                    checkrow.extend(fellow)
-                checkrow = set(checkrow)
-
-                colmates = self.__dict__["posscol" + str(c)][:c] + self.__dict__["posscol" + str(c)][c+1:] 
-                checkcol = []
-                for fellow in colmates:
-                    checkcol.extend(fellow)
-                checkcol = set(checkcol)
-
-                pos = (3*(r%3) + (c%3))
-                sqrmates = self.__dict__[f"posssqr{r//3}{c//3}"][:pos] + self.__dict__[f"posssqr{r//3}{c//3}"][pos+1:]
-                checksqr = []
-                for fellow in sqrmates:
-                    checksqr.extend(fellow)
-                checksqr = set(checksqr)
-
-                poss = self.possibles[r][c]
-                for num in range(1, 10):
-                    # Consider only numbers in poss
-                    if not num in poss:
-                        continue
-                    if (not num in checkrow
-                        or not num in checkcol
-                        or not num in checksqr):
-                        self.print_possibles()
-                        print("row = " + str(r))
-                        print("col = " + str(c))
-                        print("Pos = " + str(pos))
-                        self.raw[r][c] = num
-                        print((r+1, c+1), " -> ", num)
-                        break
-        self.update()
-        print("Ending second pass")
-        return initial == str(self.raw)
-
-    def last_pass(self):
-        lp_outs = []
-        for r in range(9):
-            for c in range(9):
-                if self.possibles[r][c]:
-                    pass
-
-
-    def solve(self):
-        while True:
-            initial = str(self.raw)
-            while not self.first_pass():
-                pass
-            self.second_pass()
-            if initial == str(self.raw):
-                for line in self.possibles:
-                    print(line)
-                print(self)
-                done = True
-                for row in self.raw:
-                    if 0 in row:
-                        done = False
-                return done
-
-    def validate(self):
-        valid = True
-        for i in range(9):
-            r = [str(v) for v in self.__dict__["row" + str(i)] if v != 0]
-            if len(set(r)) != len("".join(r)):
-                valid = False
-            c = [str(v) for v in self.__dict__["col" + str(i)] if v != 0]
-            if len(set(c)) != len("".join(c)):
-                valid = False
-        for x in range(3):
-            for y in range(3):
-                s = [str(v) for v in self.__dict__[f"sqr{x}{y}"] if v != 0]
-                if len(set(s)) != len("".join(s)):
-                    valid = False
-        return valid
-
-    def full(self):
-        _full = True
-        for row in self.raw:
-            if 0 in row:
-                _full = False
-        return _full
-    
-    def solveable(self):
-        _solveable = True
-        for r in range(9):
-            for c in range(9):
-                if self.raw[r][c] == 0 and len(self.possibles[r][c]) == 0:
-                    _solveable = False
-        return _solveable
-
-    def guess(self):
-        self.temp = Sudoku(self.raw)
-        self.temp.update()
-        blah = tuple(self.temp.possibles)
-        for r in range(9):
-            for c in range(9):
-                if self.temp.possibles[r][c]:
-                    for poss in blah[r][c]:
-                        self.temp.raw[r][c] = poss
-                        self.temp.possibles[r][c].remove(poss)
-                        self.temp.update()
-                        if not self.temp.validate():
-                            print("not temp.validate()")
-                            continue
-                        if self.temp.solveable() and not self.temp.full():
-                            print("not temp.full and self.solveable()")
-                            print(f"({r+1}, {c+1}) -> {poss}")
-                            print(self.temp, "\n")
-                            self.temp.print_possibles()
-                            print()
-                            self.temp.guess()
-                        if self.temp.validate() and self.temp.full():
-                            print("temp.validate() and temp.full()!")
-                            print(self.temp.full())
-                            self.raw = self.temp.raw
-                            self.update()
-                            return
-                        else:
-                            print("else")
-                            return
-
-    def guess2(self):
-        self.update()
-        opt_list = []
-        for r in range(9):
-            for c in range(9):
-                if self.possibles[r][c]:
-                    opt_list.append((r, c, self.possibles[r][c]))
-
-        poss_list = []
-        for cell in opt_list:
-            if not poss_list:
-                poss_list.extend(cell)
-            else:
-                t = []
-                for poss in poss_list:
-                    
-
-    def row(self, *args):
-        return self.__dict__["row" + str(args[0])]
-
-    def col(self, *args):
-        return self.__dict__["col" + str(args[0])]
-
-    def square(self, *args):
-        return (args[0]//3, args[1]//3)
 
     def __getitem__(self, key):
-        # 0-indexed in both instances, as god intended
-        if isinstance(key, int):
-            # e.g. Sudoku[15] should get 1, 7
-            row = key // 9
-            col = key % 9
-            return self.raw[row][col]
-        elif isinstance(key, tuple):
+        # Allow for self[r, c] indexing
+        try:
             a, b = key
             return self.raw[a][b]
+        except IndexError:
+            raise IndexError(f"Nothing exists at {a}, {b}")
+        except TypeError:
+            raise TypeError("Sudoku indexing requires int, int coordinates")
+
+    def __setitem__(self, key, value):
+        # Allow for self[r, c] index setting
+        try:
+            a, b = key
+            self.raw[a][b] = value
+        except IndexError:
+            raise IndexError(f"{a}, {b} is out of Sudoku bounds")
+        except TypeError:
+            raise TypeError("Sudoku indexing requires int, int coordinates")
+
+    def __iter__(self):
+        """Yields each cell in Sudoku as a dict with val, r(ow), and c(ol)."""
+        for r in range(9):
+            for c in range(9):
+                yield {"val": self.raw[r][c], "r": r, "c": c}
+
+    def __len__(self):
+        """Return the number of unfilled cells in the puzzle."""
+        length = 0
+        for cell in self:
+            if cell["val"] > 0:
+                length += 1
+        return length
 
     def __str__(self):
-        out = ""
+        string = ""
+        # Count which # cell you're on to track where to add square 
+        i = 0
+        for cell in self:
+            if cell["val"] != 0:
+                string += str(cell['val'])
+            else:
+                # Print '-' for a blank cell
+                string += "-"
+            i += 1
+            # Check for being at the end of column 3 or 6
+            if i%9 == 3 or i%9 == 6:
+                string += "|"
+            # If not at the end of a line, add " " to pad #s
+            elif i % 9:
+                string += " "
+            # If at the end of the line but not the end of the puzzle, add \n
+            elif i % 81 and not i % 9:
+                string += "\n"
+            # At end of row 3 and 6, add horizontal bar
+            if i == 27 or i == 54:
+                string += "-----------------\n"
+        return string
+
+    def percent_done(self):
+        """Return % completion rounded to 2 decimal points."""
+        return round((100*len(self)) / 81, 2)
+        
+    def full(self):
+        """Return True if all cells are full, False if not."""
+        return len(self) == 81
+
+    def validate(self):
+        """Return whether the sudoku values appear to be valid."""
+        valid = True
+        # Check for non-0 duplicates in col_ and row_
+        for i in range(9):
+            col_ = [val for val in self.column(i) if val != 0]
+            row_ = [val for val in self.row(i) if val != 0]
+            if len(col_) != len(set(col_)) or len(row_) != len(set(row_)):
+                valid = False
+        # Check for non-0 duplicates in sqr_
+        for sqx in (0, 3, 6):
+            for sqy in (0, 3, 6):
+                sqr_ = [val for val in self.square(sqx, sqy) if val != 0]
+            if len(sqr_) != len(set(sqr_)):
+                valid = False
+        return valid
+
+    def column(self, col_):
+        """Iterate over col_'s contents."""
         for row in self.raw:
-            for num in row:
-                out += str(num) + " "
-            out = out[:-1] + "\n"
-        out = out[:-1]
+            yield row[col_]
+
+    def others_in_column(self, row_, col_):
+        """Iterate over col_'s contents except for row_."""
+        for r in range(9):
+            if r != row_:
+                yield self[r, col_]
+
+    def row(self, row_):
+        """Iterate over row_'s contents."""
+        for cell_val in self.raw[row_]:
+            yield cell_val
+
+    def others_in_row(self, row_, col_):
+        """Iterate over row_'s contents except for col_."""
+        for c in range(9):
+            if c != col_:
+                yield self[row_, c]
+
+    def square(self, row_, col_):
+        """Iterate over the square containing row_, col_."""
+        for r in range(9):
+            for c in range(9):
+                if r//3 == row_//3 and c//3 == col_//3:
+                    yield self[r, c]
+
+    def others_in_square(self, row_, col_):
+        """Iterate over the square containing row_, col_ except for that cell."""
+        for r in range(9):
+            for c in range(9):
+                # if it's in the same square and not in the same cell...
+                if (r//3 == row_//3 and c//3 == col_//3
+                    and not (r == row_ and c == col_)):
+                    yield self[r, c]
+
+    def possibles(self, row_, col_, none_if_full=True):
+        """Return set of the possible values for self[row_, col_]."""
+        if self[row_, col_] and none_if_full:
+            return set()
+        else:
+            poss = set([i+1 for i in range(9)])
+            for val in self.others_in_column(row_, col_):
+                poss.discard(val)
+            for val in self.others_in_row(row_, col_):
+                poss.discard(val)
+            for val in self.others_in_square(row_, col_):
+                poss.discard(val)
+            return poss
+
+    def other_row_possibles(self, row_, col_):
+        """Return set of possible values for other cells in row."""
+        orp = set()
+        for c in range(9):
+            if c != col_:
+                orp = orp | self.possibles(row_, c)
+        return orp
+
+    def other_column_possibles(self, row_, col_):
+        """Return set of possible values for other cells in column."""
+        ocp = set()
+        for r in range(9):
+            if r != row_:
+                ocp = ocp | self.possibles(r, col_)
+        return ocp
+    
+    def other_square_possibles(self, row_, col_):
+        """Return set of possible values for other cells in square."""
+        osp = set()
+        for r in range(9):
+            for c in range(9):
+                if row_//3 == r//3 and col_//3 == c//3 and (r, c) != (row_, col_):
+                    osp = osp | self.possibles(r, c)
+        return osp
+
+    def fill_possibles(self):
+        """Fill cells if they have only one possible value and return full()."""
+        print("db - running fill_possibles()")
+        for cell in self:
+            r = cell["r"]
+            c = cell["c"]
+            poss = self.possibles(r, c)
+            if len(poss) == 1:
+                val = poss.pop()
+                self[r, c] = val
+                print(f"({r}, {c}) -> {val}")
+        return self.full()
+
+    def only_possibles(self):
+        """Fill cell if it has a unique possibility, return full()."""
+        print("db - running only_possibles()")
+        for cell in self:
+            r, c = cell["r"], cell["c"]
+            check = self.possibles(r, c)
+            if not check:
+                continue
+            for val in range(1, 10):
+                if (val in check and
+                    (not val in self.other_row_possibles(r, c)
+                    or not val in self.other_column_possibles(r, c)
+                    or not val in self.other_square_possibles(r, c))):
+                    print(f"({r}, {c}) -> {val}")
+                    self[r, c] = val
+        return self.full()
+
+    def guess_dicts(self):
+        out = []
+        for cell in self:
+            r, c = cell["r"], cell["c"]
+            if cell["val"] == 0:
+                out.append({"val": cell["val"],
+                            "r": r,
+                            "c": c,
+                            "poss": self.possibles(r, c)
+                            })
+        for dict_ in out:
+            print(dict_)
         return out
 
-    @classmethod
-    def random(cls):
-        """Generate a random (potentially invalid) test sudoku."""
-        nums = [i+1 for i in range(9)]
-        puzz = []
-        for i in range(9):
-            random.shuffle(nums)
-            puzz.append(list(nums))
-        return cls(puzz)
+    def guess(self, *dicts):
+        # given {val, r, c, poss} and a self.validate() function
+        if not dicts:
+            return True
+        for cell in dicts:
+            r, c = cell["r"], cell["c"]
+            for p in cell["poss"]:
+                self[r, c] = p
+                print(f"Guessing ({r}, {c}) -> {p}")
+                if self.validate() and self.guess(*dicts[1:]):
+                    return True
+                elif not self.validate():
+                    print(f"{p} was wrong")
+                    continue
+                else:
+                    print("Valid, but all sub-guesses went wrong - retreating one layer")
+                    pass
+            self[r, c] = 0
+            return False
+     
+    def solve_funcs(self, *args):
+        """Recur args until none of them change self.raw, return full()."""
+        current = len(self)
+        while not args[0]():
+            if current == len(self) and len(args) > 1:
+                self.solve_funcs(*args[1:])
+            if current == len(self):
+                return self.full()
+            current = len(self)
+        return self.full()
+
+    def solve(self, guess_last=True):
+        """Call solve_funcs() with solve algorithms and return solution."""
+        if self.solve_funcs(self.fill_possibles, self.only_possibles):
+            print("Puzzle complete!")
+        else:
+            print("Incomplete.")
+            if guess_last:
+                self.guess(*self.guess_dicts())
+        print(self)
+        return self
+
+    def solve_by_guessing(self):
+        """Run guess() until the puzzle is solved, then return self."""
+        self.guess(*self.guess_dicts())
+        return self
 
     @classmethod
-    def process_txt(cls, name):
-        name = "./src/" + name + ".txt"
-        out = []
+    def process_str(cls, name):
+        """Create a Sudoku from a text file located in ./src/."""
+        name = f"./src/{name}.txt"
         with open(name, "r") as f:
-            temp = f.read().split("\n")
-            for line in temp:
-                line = line.split()
-                line = list(map(int, line))
-                if len(line) != 0:
-                    out.append(line)
-        print(out)
-        return cls(out)
+            source = f.read().split("\n")
+            # Check len(line) to not accidentally import blank lines
+            source = [list(map(int, list(line)))
+                      for line in source if len(line) > 0]
+        return cls(source)
 
 
-to_do = Sudoku.process_txt("easy")
-to_do.guess()
-# to_do.solve()
+to_do = Sudoku.process_str("new_extreme")
+print(to_do)
+to_do.solve_by_guessing()
+print(to_do)
 
