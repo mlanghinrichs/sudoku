@@ -1,3 +1,11 @@
+---
+
+Sudoku.py can be run with command-line arguments or imported and used as a
+module. Read 'python sudoku.py --help' for argparse usage. Verbosity ('-v') is
+recommended for comprehension.
+
+---
+
 Sudoku.py is a combined algorithmic and recursive-guessing sudoku solver which
 utilizes Sudoku objects. A Sudoku object's initialization takes a 9x9 list of
 lists and saves that to its raw attribute, or processes a space-and-newline
@@ -11,5 +19,7 @@ default), it then drops into the guess() method to finish out the puzzle.
 Finally, it returns itself (the solved Sudoku object).
 
 The solve_by_guessing() method does not use algorithmic solving first, but
-simply guesses possible values and checks if they produce a valid Sudoku until
-the puzzle is full. It also returns the solved object.
+recursively guesses possible values and checks if they produce a valid Sudoku
+until the puzzle is full. It also returns the solved object.
+
+---

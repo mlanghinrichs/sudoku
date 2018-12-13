@@ -1,3 +1,5 @@
+import argparse
+
 class Sudoku():
 
     def __init__(self, puzzle):
@@ -166,9 +168,9 @@ class Sudoku():
                     osp = osp | self.possibles(r, c)
         return osp
 
-    def fill_possibles(self):
+    def fill_possibles(self, verbose=False):
         """Fill cells if they have only one possible value and return full()."""
-        print("db - running fill_possibles()")
+        if verbose: print("running fill_possibles()")
         for cell in self:
             r = cell["r"]
             c = cell["c"]
@@ -176,12 +178,12 @@ class Sudoku():
             if len(poss) == 1:
                 val = poss.pop()
                 self[r, c] = val
-                print(f"({r}, {c}) -> {val}")
+                if verbose: print(f"({r}, {c}) -> {val}")
         return self.full()
 
-    def only_possibles(self):
+    def only_possibles(self, verbose=False):
         """Fill cell if it has a unique possibility, return full()."""
-        print("db - running only_possibles()")
+        if verbose: print("running only_possibles()")
         for cell in self:
             r, c = cell["r"], cell["c"]
             check = self.possibles(r, c)
@@ -192,7 +194,7 @@ class Sudoku():
                     (not val in self.other_row_possibles(r, c)
                     or not val in self.other_column_possibles(r, c)
                     or not val in self.other_square_possibles(r, c))):
-                    print(f"({r}, {c}) -> {val}")
+                    if verbose: print(f"({r}, {c}) -> {val}")
                     self[r, c] = val
         return self.full()
 
@@ -206,11 +208,9 @@ class Sudoku():
                             "c": c,
                             "poss": self.possibles(r, c)
                             })
-        for dict_ in out:
-            print(dict_)
         return out
 
-    def guess(self, *dicts):
+    def guess(self, verbose=False, *dicts):
         # given {val, r, c, poss} and a self.validate() function
         if not dicts:
             return True
@@ -218,49 +218,54 @@ class Sudoku():
             r, c = cell["r"], cell["c"]
             for p in cell["poss"]:
                 self[r, c] = p
-                print(f"Guessing ({r}, {c}) -> {p}")
-                if self.validate() and self.guess(*dicts[1:]):
+                if verbose: print(f"Guessing ({r}, {c}) -> {p}")
+                if self.validate() and self.guess(verbose, *dicts[1:]):
                     return True
                 elif not self.validate():
-                    print(f"{p} was wrong")
+                    if verbose: print(f"{p} was wrong")
                     continue
                 else:
-                    print("Valid, but all sub-guesses went wrong - retreating one layer")
+                    if verbose:
+                        print("Valid, but all sub-guesses wrong - retreating")
                     pass
             self[r, c] = 0
             return False
      
-    def solve_funcs(self, *args):
+    def solve_funcs(self, verbose=False, *args):
         """Recur args until none of them change self.raw, return full()."""
         current = len(self)
-        while not args[0]():
+        while not args[0](verbose):
             if current == len(self) and len(args) > 1:
-                self.solve_funcs(*args[1:])
+                self.solve_funcs(verbose, *args[1:])
             if current == len(self):
                 return self.full()
             current = len(self)
         return self.full()
 
-    def solve(self, guess_last=True):
+    def solve(self, verbose=False, guess_last=True):
         """Call solve_funcs() with solve algorithms and return solution."""
-        if self.solve_funcs(self.fill_possibles, self.only_possibles):
+        if self.solve_funcs(verbose, self.fill_possibles, self.only_possibles):
             print("Puzzle complete!")
         else:
             print("Incomplete.")
             if guess_last:
-                self.guess(*self.guess_dicts())
+                self.guess(verbose, *self.guess_dicts())
         print(self)
         return self
 
-    def solve_by_guessing(self):
+    def solve_by_guessing(self, verbose=False):
         """Run guess() until the puzzle is solved, then return self."""
-        self.guess(*self.guess_dicts())
+        self.guess(verbose, *self.guess_dicts())
+        print(self)
         return self
 
     @classmethod
-    def process_str(cls, name):
-        """Create a Sudoku from a text file located in ./src/."""
-        name = f"./src/{name}.txt"
+    def process_str(cls, path, src=False):
+        """Create a Sudoku from text file located at (path) or in ./src/(path)"""
+        if src == True:
+            name = f"./src/{path}"
+        else:
+            name = path
         with open(name, "r") as f:
             source = f.read().split("\n")
             # Check len(line) to not accidentally import blank lines
@@ -269,8 +274,28 @@ class Sudoku():
         return cls(source)
 
 
-to_do = Sudoku.process_str("new_extreme")
-print(to_do)
-to_do.solve_by_guessing()
-print(to_do)
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path", help="Path to the Sudoku to solve; use --src for included puzzles")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-g", "--guess", help="Solve only by guessing",
+                       action="store_true")
+    group.add_argument("-a", "--algorithmic", help="Solve only by algorithm",
+                       action="store_true")
+    parser.add_argument("-v", "--verbose", help="Log solver actions",
+                        action="store_true")
+    parser.add_argument("-s", "--src", action="store_true", 
+                help="Pull named file from src instead of specifying a path")
+    args = parser.parse_args()
+
+    to_do = Sudoku.process_str(args.path, args.src)
+    if args.guess:
+        to_do.solve_by_guessing(args.verbose)
+    elif args.algorithmic:
+        to_do.solve(args.verbose, guess_last=False)
+    else:
+        to_do.solve(args.verbose)
+
+if __name__ == "__main__":
+    main()
 
