@@ -211,7 +211,9 @@ class Sudoku():
                     print(f"{p} was wrong")
                     continue
                 else:
-                    print("Something went wrong?")
+                    print("Valid, but all sub-guesses went wrong - retreating one layer")
+                    pass
+            self[r, c] = 0
             return False
      
     def solve_funcs(self, *args):
@@ -234,6 +236,9 @@ class Sudoku():
             print(self.guess(*self.guess_dicts()))
         print(self)
 
+    def solve_by_guessing(self):
+        print(self.guess(*self.guess_dicts()))
+
     @classmethod
     def process_str(cls, name):
         """Create a Sudoku from a text file located in ./src/."""
@@ -245,7 +250,8 @@ class Sudoku():
         return cls(source)
 
 
-to_do = Sudoku.process_str("extreme1")
+to_do = Sudoku.process_str("new_extreme")
 print(to_do)
-to_do.solve()
+to_do.solve_by_guessing()
+print(to_do)
 
